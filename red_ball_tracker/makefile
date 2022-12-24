@@ -1,4 +1,4 @@
-PROJECT_NAME = tracker
+PROJECT_NAME = red_ball_tracker
 CROSS_PREFIX= #arm-linux-gnueabihf-
 
 AS = $(CROSS_PREFIX)as
@@ -12,15 +12,15 @@ LDFLAGS=
 LIBS=`pkg-config --cflags --libs opencv4`
 
 OBJS = \
-	tracker.o
+	red_ball_tracker.o
 
-tracker.o : tracker.cc
-	$(CC) $(CFLAGS) -c tracker.cc -o tracker.o $(LIBS) $(CCFLAGS)
+red_ball_tracker.o : red_ball_tracker.cc
+	$(CC) $(CFLAGS) -c red_ball_tracker.cc -o red_ball_tracker.o $(LIBS) $(CCFLAGS)
 
 $(PROJECT_NAME) : $(OBJS)
-	$(CC) $(OBJS) -o tracker $(LIBS) $(CCFLAGS)
+	$(CC) $(OBJS) -o red_ball_tracker $(LIBS) $(CCFLAGS)
 
-all: tracker
+all: red_ball_tracker
 
 .PHONY: clean
 clean : 
