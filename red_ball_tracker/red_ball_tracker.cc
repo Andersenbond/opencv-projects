@@ -8,14 +8,12 @@
 #include <iostream>
 #include <cstring>
 
-#include "samples_utility.hpp"
-
 using namespace cv;
 using namespace std;
  
 Mat myFilterBlobs(Mat frame, double minValidArea = 0.0);
-Mat findBiggestItem(Mat frame, double minValidArea = 0.0);
-void seColorDetectionRange(Mat* frame, const Scalar lower, const Scalar upper);
+Point findBiggestItem(Mat frame, float &radius, 
+                        Point2f &center, double minValidArea = 0.0);
 
 /* Define the Ball threshold colors, in this program it is 
  * expected a red ball. Here we define the lower and upper 
@@ -27,8 +25,8 @@ Scalar lowerRedRGB1Ba = Scalar(0 ,70, 50);
 Scalar upperRedRGB1Ba = Scalar(10,255, 255);
 Scalar lowerRedRGB1Bb = Scalar(170 ,70, 50);
 Scalar upperRedRGB1Bb = Scalar(180,255, 255);
-const Scalar orangeLowerHSVRange = Scalar(5, 50, 50);
-const Scalar orangeUpperHSVRange = Scalar(13, 255, 255);
+const Scalar orangeLowerHSVRange = Scalar(2, 80, 50);
+const Scalar orangeUpperHSVRange = Scalar(20, 255, 255);
 
 int main( int argc, char** argv )
 {
@@ -77,31 +75,40 @@ int main( int argc, char** argv )
     thresholdFrame = /* mask1 |*/ mask2;
     imshow("thresholdFrame1",thresholdFrame);
 
-    erode(thresholdFrame, thresholdFrame, 0, Point(-1,-1), 2);
-    dilate(thresholdFrame, thresholdFrame, 0, Point(-1,-1), 2);
+   // erode(thresholdFrame, thresholdFrame, 0, Point(-1,-1), 2);
+   // dilate(thresholdFrame, thresholdFrame, 0, Point(-1,-1), 2);
 
     /* Threshold the image with the color range defined above. 
      * The result should be a black and white image.  */
     // inRange(hsvFrame, lowerRedRGB, upperRedRGB, thresholdFrame);
  
     /* Show the image - test only */
-
     // imshow("thresholdFrame2",findBiggestItem(thresholdFrame));
-
-    /* Calculate the center of the ball if detected */
-    Moments m = moments((thresholdFrame), false);
-    Point com(m.m10 / m.m00, m.m01 / m.m00);
+    
+    /* Calculate the center of the ball if detected 
+    Moments m = moments(thresholdFrame, false);
+    Point com(m.m10 / m.m00, m.m01 / m.m00);*/
+    float radius;
+    Point2f center;
+    Point com = findBiggestItem(thresholdFrame, radius, center);
 
     /* Draw the marker around the ball */
     Scalar color = Scalar(0, 0, 255);
     drawMarker(frame, com, color, MARKER_CROSS, 50, 5);
 
+    /* Draw Circle Around ball */
+    // circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2);
+    if(radius > 50)
+    {
+      circle(frame, center, int(radius), (0, 255, 255), 2);
+    }
+	  //circle(frame, center, 5, (0, 0, 255), -1);
+
     /* Show the frame containing the marker on the ball */
     imshow("Final", frame);
 
-// show image with the tracked object
-  
-      //quit on ESC button
+    // show image with the tracked object
+    //quit on ESC button
     if(waitKey(1)==27)break;
   }
 
@@ -138,15 +145,15 @@ Mat myFilterBlobs(Mat frame, double minValidArea)
   return ret;
 }
 
-Mat findBiggestItem(Mat frame, double minValidArea)
+Point findBiggestItem(Mat frame, float &radius, Point2f &center, double minValidArea)
 {
-  Mat ret = frame.clone();
+  Point ret = Point(-1, -1);
   vector<vector<Point>> contours;
   vector<Vec4i> hierarchy;
   int largestContoursIndex = -1;
   double maxArea = 0.0;
 
-  findContours(frame.clone(), contours, hierarchy, RETR_EXTERNAL, 
+  findContours(frame, contours, hierarchy, RETR_EXTERNAL, 
   CHAIN_APPROX_SIMPLE, Point());
 
   if(contours.size() > 2)
@@ -160,31 +167,22 @@ Mat findBiggestItem(Mat frame, double minValidArea)
           largestContoursIndex = i;
       }
     }
-        
-    drawContours(ret, contours, 
-                    largestContoursIndex, 
-                      Scalar(255), FILLED, 8);
-    
-
+   
  /* Calculate the center of the ball if detected */
     Moments m = moments(contours[largestContoursIndex], false);
     Point com(m.m10 / m.m00, m.m01 / m.m00);
 
-    /* Draw the marker around the ball */
-    Scalar color = Scalar(0, 255, 0);
-    drawMarker(frame, com, color, MARKER_SQUARE, 50, 5);
-    
-    ret &= frame;
-
-  } 
-  else
-  {
-    ret = frame;
+    minEnclosingCircle(contours[largestContoursIndex], center, radius);
+    if(radius < 50)
+    {
+      ret = Point(-1, -1);
+    }
+    else
+    {
+      ret = com;
+    }
   } 
   return ret;
 }
 
-void seColorDetectionRange(Mat* frame, const Scalar lower, const Scalar upper)
-{
-  inRange(*frame, lower, upper, *frame);
-}
+ 
